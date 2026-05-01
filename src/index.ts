@@ -1,4 +1,4 @@
-import { createTypenxAddon, serveTypenxAddon } from '@typenx/addon-sdk'
+import { createTypenxAddon, serveTypenxAddon } from '@typenx/addon-ts-sdk'
 import { MyAnimeListCatalog } from './mal.js'
 
 const mal = new MyAnimeListCatalog(process.env.MAL_CLIENT_ID ?? '')

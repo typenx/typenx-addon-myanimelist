@@ -12,7 +12,7 @@
     "dev": "tsx src/index.ts"
   },
   "dependencies": {
-    "@typenx/addon-sdk": "file:../typenx-addon-sdk"
+    "@typenx/addon-ts-sdk": "file:../typenx-addon-TS-sdk"
   },
   "devDependencies": {
     "@types/node": "^22.10.2",

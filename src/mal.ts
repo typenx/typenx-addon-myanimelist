@@ -4,7 +4,7 @@ import type {
   CatalogRequest,
   CatalogResponse,
   SearchRequest,
-} from '@typenx/addon-sdk'
+} from '@typenx/addon-ts-sdk'
 
 const API_BASE = 'https://api.myanimelist.net/v2'
 const FIELDS = [
