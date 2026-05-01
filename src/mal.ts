@@ -113,8 +113,13 @@ export class MyAnimeListCatalog {
 
   async search(request: SearchRequest): Promise<CatalogResponse> {
     const limit = clampLimit(request.limit)
+    const query = request.query.trim()
+    if (!query) {
+      return this.catalog({ catalog_id: 'popular', limit })
+    }
+
     const response = await this.get<MalListResponse>(
-      `/anime?q=${encodeURIComponent(request.query)}&limit=${limit}&fields=${FIELDS}`,
+      `/anime?q=${encodeURIComponent(query)}&limit=${limit}&fields=${FIELDS}`,
     )
     return { items: response.data.map(({ node }) => toPreview(node)) }
   }
