@@ -337,7 +337,7 @@ function toMangaMetadata(manga: MalManga): AnimeMetadata {
     content_type: mangaContentTypeOf(manga.media_type),
     source: manga.media_type ?? null,
     duration_minutes: null,
-    episode_count: manga.num_chapters ?? manga.num_volumes ?? null,
+    episode_count: positiveNumber(manga.num_chapters) ?? positiveNumber(manga.num_volumes),
     score: manga.mean ?? null,
     rank: manga.rank ?? null,
     popularity: manga.popularity ?? manga.num_list_users ?? null,
@@ -400,6 +400,10 @@ function yearOf(anime: MalAnime) {
 function parseYear(date: string | undefined) {
   const year = date?.slice(0, 4)
   return year && /^\d{4}$/.test(year) ? Number(year) : null
+}
+
+function positiveNumber(value: number | null | undefined) {
+  return typeof value === 'number' && value > 0 ? value : null
 }
 
 function contentTypeOf(mediaType: string | null | undefined): ContentType {
