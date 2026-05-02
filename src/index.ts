@@ -24,6 +24,18 @@ const addon = createTypenxAddon({
         content_type: 'anime',
         filters: [],
       },
+      {
+        id: 'manga-popular',
+        name: 'Popular Manga',
+        content_type: 'manga',
+        filters: [],
+      },
+      {
+        id: 'manga-favorite',
+        name: 'Favorite Manga',
+        content_type: 'manga',
+        filters: [],
+      },
     ],
   },
   handlers: {
@@ -34,6 +46,7 @@ const addon = createTypenxAddon({
     catalog: (request) => mal.catalog(request),
     search: (request) => mal.search(request),
     anime: (id) => mal.anime(id),
+    manga: (id) => mal.manga(id),
     recommendations: (request) => mal.recommendations(request),
   },
 })

@@ -38,6 +38,30 @@ const FIELDS = [
   'updated_at',
 ].join(',')
 
+const MANGA_FIELDS = [
+  'id',
+  'title',
+  'main_picture',
+  'pictures',
+  'alternative_titles',
+  'synopsis',
+  'media_type',
+  'start_date',
+  'end_date',
+  'status',
+  'genres',
+  'num_chapters',
+  'num_volumes',
+  'authors',
+  'serialization',
+  'mean',
+  'rank',
+  'popularity',
+  'num_list_users',
+  'num_scoring_users',
+  'updated_at',
+].join(',')
+
 type MalPicture = {
   medium?: string
   large?: string
@@ -90,8 +114,31 @@ type MalAnime = {
   updated_at?: string
 }
 
+type MalManga = Omit<
+  MalAnime,
+  | 'start_season'
+  | 'num_episodes'
+  | 'source'
+  | 'average_episode_duration'
+  | 'rating'
+  | 'studios'
+  | 'broadcast'
+> & {
+  num_chapters?: number
+  num_volumes?: number
+  authors?: Array<{
+    node?: MalNamedResource
+    role?: string
+  }>
+  serialization?: MalNamedResource[]
+}
+
 type MalListResponse = {
   data: Array<{ node: MalAnime }>
+}
+
+type MalMangaListResponse = {
+  data: Array<{ node: MalManga }>
 }
 
 export class MyAnimeListCatalog {
@@ -104,7 +151,15 @@ export class MyAnimeListCatalog {
   async catalog(request: CatalogRequest): Promise<CatalogResponse> {
     const limit = clampLimit(request.limit)
     if (request.query) {
-      return this.search({ query: request.query, limit })
+      return this.search({ query: request.query, content_type: request.content_type, limit })
+    }
+
+    if (isMangaRequest(request)) {
+      const rankingType = request.catalog_id === 'manga-favorite' ? 'bypopularity' : 'all'
+      const response = await this.get<MalMangaListResponse>(
+        `/manga/ranking?ranking_type=${rankingType}&limit=${limit}&fields=${MANGA_FIELDS}`,
+      )
+      return { items: response.data.map(({ node }) => toMangaPreview(node)) }
     }
 
     const rankingType = request.catalog_id === 'airing' ? 'airing' : 'all'
@@ -118,7 +173,18 @@ export class MyAnimeListCatalog {
     const limit = clampLimit(request.limit)
     const query = request.query.trim()
     if (!query) {
-      return this.catalog({ catalog_id: 'popular', limit })
+      return this.catalog({
+        catalog_id: request.content_type === 'manga' ? 'manga-popular' : 'popular',
+        content_type: request.content_type,
+        limit,
+      })
+    }
+
+    if (request.content_type === 'manga') {
+      const response = await this.get<MalMangaListResponse>(
+        `/manga?q=${encodeURIComponent(query)}&limit=${limit}&fields=${MANGA_FIELDS}`,
+      )
+      return { items: response.data.map(({ node }) => toMangaPreview(node)) }
     }
 
     const response = await this.get<MalListResponse>(
@@ -132,6 +198,13 @@ export class MyAnimeListCatalog {
       `/anime/${encodeURIComponent(id)}?fields=${FIELDS}`,
     )
     return toMetadata(anime)
+  }
+
+  async manga(id: string): Promise<AnimeMetadata> {
+    const manga = await this.get<MalManga>(
+      `/manga/${encodeURIComponent(id)}?fields=${MANGA_FIELDS}`,
+    )
+    return toMangaMetadata(manga)
   }
 
   async recommendations(request: RecommendationRequest): Promise<RecommendationResponse> {
@@ -182,6 +255,20 @@ function toPreview(anime: MalAnime): AnimePreview {
   }
 }
 
+function toMangaPreview(manga: MalManga): AnimePreview {
+  return {
+    id: String(manga.id),
+    title: manga.title,
+    poster: posterOf(manga),
+    banner: bannerOf(manga),
+    synopsis: manga.synopsis ?? null,
+    score: manga.mean ?? null,
+    year: parseYear(manga.start_date),
+    content_type: mangaContentTypeOf(manga.media_type),
+    genres: manga.genres?.map((genre) => genre.name) ?? [],
+  }
+}
+
 function toMetadata(anime: MalAnime): AnimeMetadata {
   const description = anime.synopsis ?? null
   const studios = anime.studios?.map((studio) => studio.name) ?? []
@@ -229,6 +316,59 @@ function toMetadata(anime: MalAnime): AnimeMetadata {
   }
 }
 
+function toMangaMetadata(manga: MalManga): AnimeMetadata {
+  const description = manga.synopsis ?? null
+  const authors = uniqueStrings(
+    manga.authors?.map((author) => author.node?.name) ?? [],
+  )
+  return {
+    id: String(manga.id),
+    title: manga.title,
+    original_title: manga.alternative_titles?.ja ?? null,
+    alternative_titles: alternativeTitlesOf(manga),
+    synopsis: description,
+    description,
+    poster: posterOf(manga),
+    banner: bannerOf(manga),
+    year: parseYear(manga.start_date),
+    season: null,
+    season_year: parseYear(manga.start_date),
+    status: manga.status ?? null,
+    content_type: mangaContentTypeOf(manga.media_type),
+    source: manga.media_type ?? null,
+    duration_minutes: null,
+    episode_count: manga.num_chapters ?? manga.num_volumes ?? null,
+    score: manga.mean ?? null,
+    rank: manga.rank ?? null,
+    popularity: manga.popularity ?? manga.num_list_users ?? null,
+    rating: null,
+    genres: manga.genres?.map((genre) => genre.name) ?? [],
+    tags: [],
+    authors,
+    studios: manga.serialization?.map((serialization) => serialization.name) ?? [],
+    staff:
+      manga.authors
+        ?.map((author) => ({
+          name: author.node?.name ?? '',
+          role: author.role ?? null,
+        }))
+        .filter((credit) => credit.name) ?? [],
+    country_of_origin: 'JP',
+    start_date: manga.start_date ?? null,
+    end_date: manga.end_date ?? null,
+    site_url: `https://myanimelist.net/manga/${manga.id}`,
+    trailer_url: null,
+    external_links: [
+      {
+        site: 'MyAnimeList',
+        url: `https://myanimelist.net/manga/${manga.id}`,
+      },
+    ],
+    episodes: [],
+    updated_at: manga.updated_at ?? new Date().toISOString(),
+  }
+}
+
 function alternativeTitlesOf(anime: MalAnime) {
   return uniqueStrings([
     anime.alternative_titles?.en,
@@ -266,6 +406,18 @@ function contentTypeOf(mediaType: string | null | undefined): ContentType {
   if (mediaType === 'ona') return 'ona'
   if (mediaType === 'special') return 'special'
   return 'anime'
+}
+
+function mangaContentTypeOf(mediaType: string | null | undefined): ContentType {
+  if (mediaType === 'manhwa') return 'manhwa'
+  if (mediaType === 'manhua') return 'manhua'
+  if (mediaType === 'light_novel' || mediaType === 'novel') return 'light_novel'
+  return 'manga'
+}
+
+function isMangaRequest(request: CatalogRequest | SearchRequest) {
+  const catalogId = 'catalog_id' in request ? request.catalog_id : ''
+  return request.content_type === 'manga' || catalogId.startsWith('manga-')
 }
 
 function createEpisodes(anime: MalAnime) {
