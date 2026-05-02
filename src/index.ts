@@ -1,7 +1,7 @@
 import { createTypenxAddon, serveTypenxAddon } from '@typenx/addon-ts-sdk'
 import { MyAnimeListCatalog } from './mal.js'
 
-const mal = new MyAnimeListCatalog(process.env.MAL_CLIENT_ID ?? '')
+const mal = new MyAnimeListCatalog(process.env.MAL_CLIENT_ID ?? null)
 
 const addon = createTypenxAddon({
   manifest: {
@@ -27,6 +27,10 @@ const addon = createTypenxAddon({
     ],
   },
   handlers: {
+    health: () => ({
+      ok: mal.isConfigured(),
+      message: mal.isConfigured() ? null : 'MAL_CLIENT_ID is missing',
+    }),
     catalog: (request) => mal.catalog(request),
     search: (request) => mal.search(request),
     anime: (id) => mal.anime(id),

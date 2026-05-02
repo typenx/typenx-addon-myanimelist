@@ -92,10 +92,10 @@ type MalListResponse = {
 }
 
 export class MyAnimeListCatalog {
-  constructor(private readonly clientId: string) {
-    if (!clientId) {
-      throw new Error('MAL_CLIENT_ID is required')
-    }
+  constructor(private readonly clientId: string | null) {}
+
+  isConfigured() {
+    return !!this.clientId
   }
 
   async catalog(request: CatalogRequest): Promise<CatalogResponse> {
@@ -132,6 +132,10 @@ export class MyAnimeListCatalog {
   }
 
   private async get<T>(path: string): Promise<T> {
+    if (!this.clientId) {
+      throw new Error('MAL_CLIENT_ID is required')
+    }
+
     const response = await fetch(`${API_BASE}${path}`, {
       headers: {
         'X-MAL-CLIENT-ID': this.clientId,
