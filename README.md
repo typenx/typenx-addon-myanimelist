@@ -2,6 +2,10 @@
 
 Official Typenx addon service backed by the MyAnimeList API.
 
+It brings MAL metadata and recommendation signals into Typenx, a self-hostable anime discovery and library platform built around open addons.
+
+If this addon is useful, star the main project at [typenx-core](https://github.com/typenx/typenx-core).
+
 This addon provides metadata only:
 
 - Popular anime catalog
