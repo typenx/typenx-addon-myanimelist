@@ -345,7 +345,9 @@ function toMangaMetadata(manga: MalManga): AnimeMetadata {
     genres: manga.genres?.map((genre) => genre.name) ?? [],
     tags: [],
     authors,
-    studios: manga.serialization?.map((serialization) => serialization.name) ?? [],
+    studios: uniqueStrings(
+      manga.serialization?.map((serialization) => serialization.name) ?? [],
+    ),
     staff:
       manga.authors
         ?.map((author) => ({
