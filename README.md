@@ -1,20 +1,18 @@
 # Typenx MyAnimeList Addon
 
-Official Typenx addon service backed by the MyAnimeList API.
+The official Typenx metadata addon for MyAnimeList.
 
-It brings MAL metadata and recommendation signals into Typenx, a self-hostable anime discovery and library platform built around open addons.
+This service speaks the Typenx addon protocol on top of the MyAnimeList API. It returns catalogs, search results, anime and manga metadata, and personalized recommendations without hosting media or returning stream URLs. Plug it into a [Typenx Core](https://github.com/typenx/typenx-core) instance and MAL becomes one more interchangeable source.
 
-If this addon is useful, star the main project at [typenx-core](https://github.com/typenx/typenx-core).
+## What it provides
 
-This addon provides metadata only:
-
-- Popular anime catalog
-- Airing anime catalog
-- Anime search
-- Anime metadata
-- Personalized recommendations
-
-It does not return stream URLs or host media.
+- `GET /manifest` - declares `catalog`, `search`, `anime_meta`, and `recommendations` resources.
+- `GET /health` - reports whether `MAL_CLIENT_ID` is configured.
+- `POST /catalog` - popular, top-ranked, currently airing, and manga feeds.
+- `POST /search` - full-text search against the MAL anime or manga index.
+- `GET /anime/:id` - full anime metadata: synopsis, genres, studios, episode counts, external links.
+- `GET /manga/:id` - full manga metadata: synopsis, authors, serialization, chapter or volume counts, external links.
+- `POST /recommendations` - ranked candidates from a like/dislike taste profile.
 
 ## Recommendations
 
@@ -29,22 +27,23 @@ It does not return stream URLs or host media.
 }
 ```
 
-The first recommender is a hybrid scoring layer: it builds a positive and negative taste profile from MAL metadata, ranks candidates with affinity, score, and recency signals, and diversifies the final list. It is intentionally deterministic and explainable so Typenx can collect clean feedback before training heavier collaborative-filtering models.
+The first recommender is a hybrid scoring layer: it builds positive and negative taste profiles from MAL metadata, ranks candidates with affinity, score, and recency signals, and diversifies the final list. It is intentionally deterministic and explainable so Typenx can collect clean feedback before training heavier collaborative-filtering models.
 
-Next ML milestones: persist user feedback, add implicit-feedback matrix factorization, blend collaborative and content scores, and run A/B tests for retention, completion rate, novelty, and dislike avoidance.
+Roadmap: persist user feedback, add implicit-feedback matrix factorization, blend collaborative and content scores, and run A/B tests for retention, completion rate, novelty, and dislike avoidance.
 
-## Local Development
+## Local development
 
 ```powershell
-npm install
 $env:MAL_CLIENT_ID = "your-mal-client-id"
-npm run dev
+cargo run
 ```
 
-The service listens on `http://127.0.0.1:8787` by default.
+The service listens on `http://127.0.0.1:8787` by default. You can get a client ID from your MyAnimeList API console.
 
-Configure Typenx Core with:
+## Wiring it into Typenx Core
 
 ```env
 TYPENX_BUILTIN_ADDONS=http://127.0.0.1:8787
 ```
+
+Use `TYPENX_DEFAULT_ADDONS` instead if you want users to be able to disable it.
