@@ -10,7 +10,7 @@ const addon = createTypenxAddon({
     version: '0.1.0',
     description: 'Official Typenx metadata addon backed by MyAnimeList.',
     icon: 'https://cdn.myanimelist.net/img/sp/icon/apple-touch-icon-256.png',
-    resources: ['catalog', 'search', 'anime_meta'],
+    resources: ['catalog', 'search', 'anime_meta', 'recommendations'],
     catalogs: [
       {
         id: 'popular',
@@ -34,6 +34,7 @@ const addon = createTypenxAddon({
     catalog: (request) => mal.catalog(request),
     search: (request) => mal.search(request),
     anime: (id) => mal.anime(id),
+    recommendations: (request) => mal.recommendations(request),
   },
 })
 

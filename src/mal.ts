@@ -4,8 +4,11 @@ import type {
   CatalogRequest,
   CatalogResponse,
   ContentType,
+  RecommendationRequest,
+  RecommendationResponse,
   SearchRequest,
 } from '@typenx/addon-ts-sdk'
+import { recommendAnime } from './recommendations.js'
 
 const API_BASE = 'https://api.myanimelist.net/v2'
 const FIELDS = [
@@ -131,6 +134,19 @@ export class MyAnimeListCatalog {
     return toMetadata(anime)
   }
 
+  async recommendations(request: RecommendationRequest): Promise<RecommendationResponse> {
+    return recommendAnime(request, {
+      fetchAnime: (id) => this.anime(id),
+      fetchCandidates: async (limit) => {
+        const [popular, airing] = await Promise.all([
+          this.catalog({ catalog_id: 'popular', limit: Math.ceil(limit / 2) }),
+          this.catalog({ catalog_id: 'airing', limit: Math.ceil(limit / 2) }),
+        ])
+        return uniqueById([...popular.items, ...airing.items])
+      },
+    })
+  }
+
   private async get<T>(path: string): Promise<T> {
     if (!this.clientId) {
       throw new Error('MAL_CLIENT_ID is required')
@@ -162,6 +178,7 @@ function toPreview(anime: MalAnime): AnimePreview {
     score: anime.mean ?? null,
     year: yearOf(anime),
     content_type: contentTypeOf(anime.media_type),
+    genres: anime.genres?.map((genre) => genre.name) ?? [],
   }
 }
 
@@ -277,6 +294,10 @@ function uniqueStrings(values: Array<string | null | undefined>) {
   return Array.from(
     new Set(values.map((value) => value?.trim()).filter((value): value is string => !!value)),
   )
+}
+
+function uniqueById(items: AnimePreview[]) {
+  return Array.from(new Map(items.map((item) => [item.id, item])).values())
 }
 
 function clampLimit(limit: number | undefined) {
